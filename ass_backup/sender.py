@@ -1,7 +1,6 @@
 '''
 Author: Fengyu Wang
 Zid: z5187561
-Python Version: 3.9.1
 '''
 from socket import *
 import threading
@@ -91,6 +90,15 @@ pdrop, seed_num):
     close_connection(receiver_host_ip, receiver_port, clientSocket, start_time, MSS)
 
 
+
+    #Data transmission (repeat until end of file)
+    #1)receive PTP segment
+    #2)send ACK segment
+    #3)Buffer data or write data into file
+
+    #connection teardown
+    # close_connection(receiver_host_ip, receiver_port, clientSocket)
+
 ############################################################ 
 #################### Helper FUNCTIONS ######################
 ############################################################ 
@@ -145,6 +153,10 @@ pdrop, seed_num):
     global ACK
     global SEQ_NUM
 
+    #divide the whole file based on the size of MSS
+    # MWS_amounts = int(len(file_content) / MWS) + (len(file_content) % MWS)   #Here it calculate how many times we need to run with the size of MWS, e.g 4 2 = 2, 5 2 = 2.5(3)
+    # print(f"the len of the file is {len(file_content)}\n")
+
     #For each window, send all segments, if receive more than 3 duplicated ACKs, resend the whole window of pakcets
     #get num_segments
     num_segments, num_windows = generate_NumSegments_Num_windows(file_content, MSS, MWS)
@@ -157,6 +169,11 @@ pdrop, seed_num):
     segement_left_over_size_bytes = window_leftover_size_bytes - MSS * int(window_leftover_size_bytes / MSS)  #the leftover size - size of segment * num of segments leftover
     segment_leftover_beginning_index = len(file_content) - segement_left_over_size_bytes
 
+    print(f"window_leftover_size_bytes = {window_leftover_size_bytes}")
+    print(f"segement_left_over_size_bytes = {segement_left_over_size_bytes}")
+    print(f"window_leftover_beginning_index = {window_leftover_beginning_index}, segment_leftover_beginning_index = {segment_leftover_beginning_index}")
+    print(f"file length = {len(file_content)}")
+
     #send MSW, MSS over
     send_MWS_MSS_segment_leftover_to_server(MWS, MSS, num_segments, num_windows, window_leftover_size_bytes, \
     window_leftover_beginning_index, segement_left_over_size_bytes, segment_leftover_beginning_index, receiver_host_ip, receiver_port, clientSocket, len(file_content))
@@ -165,6 +182,9 @@ pdrop, seed_num):
     segment_index = window_index
     beginning_window_index = 0
 
+    #if it's the first time, the packets in the whole window is send
+    # send_window_of_packets(beginning_window_index, beginning_window_index, file_content, MSS, MWS, SEQ_NUM,\
+    # clientSocket, receiver_host_ip, receiver_port, timeout, pdrop, seed_num, start_time, ACK, segment_leftover_beginning_index, segement_left_over_size_bytes)
     '''
     If we reach to the leftover parts, we shrink the size of the windows and segments. Otherwise, send it based
     on the size of MWS and MSS
@@ -176,19 +196,47 @@ pdrop, seed_num):
         
     if it has received the correct acknowledgement, window moves to the right by one unit. Otherwise, continue resending. 
     '''
+
+    #when it's the second time, the window moves to the right by one unit, only one packet is send 
+    # else:
+        # print("sending only a packet")
+        # send_segment(file_content, segment_index, MSS, MWS, next_seq_num, clientSocket, receiver_host_ip,\
+        # receiver_port)
+        # #setting timer
+        # clientSocket.settimeout(timeout)
+
     #wait for acknowledgements
     segment_send_index = beginning_window_index + MWS - MSS        #the segment we send is the last packet in the window when we move the window
+    # segment_send_index = 0        #the segment we send is the last packet in the window when we move the window
+    # while segment_send_index < beginning_window_index + MWS:
     expected_ack_num = MWS + 1      
     first_time_send_window_true = True
     beginning_window_index = 0
-    duplicated_ack = 0
-    prev_ack = 0
+    # while segment_send_index < len(file_content) - MSS:
     while expected_ack_num <= len(file_content) + 1:
+    # while beginning_window_index <= len(file_content):
+        # print("\n\n")
+        # print(f" expected_ack_num = {expected_ack_num}, len_file = {len(file_content)}")
         try:    
             #if it's the first time, find the index of the most recent 
+            # print(f"before : segment_send_index = {segment_send_index}, MWS = {MWS}, expected_ack_num = {expected_ack_num}")
             if first_time_send_window_true:
                 first_time_send_window_true = False
                 raise Exception("sending the first window")
+                # max_ack_received = 0
+                # # while (ack_received >= expected_ack_num):
+                # while True:
+                #     ack_received = receive_acknowledgement(clientSocket, start_time, SEQ_NUM, MSS)
+                #     print(f"ack_received = {ack_received}")
+                #     if ack_received > max_ack_received:
+                #         max_ack_received = ack_received
+
+                #     # print(f"max_ack_received = {max_ack_received}")
+                #     segment_send_index = max_ack_received - 1
+                #     expected_ack_num = max_ack_received + MSS
+                #     beginning_window_index = segment_send_index
+
+            # print(f"after : segment_send_index = {segment_send_index}, MWS = {MWS}, expected_ack_num = {expected_ack_num}")
 
             #wait for receive
             ack_received = receive_acknowledgement(clientSocket, start_time, SEQ_NUM, MSS)
@@ -204,7 +252,7 @@ pdrop, seed_num):
             #Here if the sender receives a high ACK and hasn't received the low ACK, it means
             #that the receiver has received all previous data, only the its acknowledgement got lost
             #Action: sliding the window and send new data
-            # ColorPrint.print_bold(f"ack_received = {ack_received}, expected_ack_num = {expected_ack_num}")
+            ColorPrint.print_bold(f"ack_received = {ack_received}, expected_ack_num = {expected_ack_num}")
 
             #update the SEQ_NUM to the last packet in a window if it's the first time
             
@@ -212,6 +260,11 @@ pdrop, seed_num):
                 if beginning_window_index < len(file_content) - MWS:
                     beginning_window_index += MSS                                      #slide window by one packet
                 new_segment_send_index = beginning_window_index + MWS - MSS        #the segment we send is the last packet in the window when we move the window 
+                # print(f"ack_received = {ack_received}, expected_ack_num = {expected_ack_num}")
+                #after the window moves forward, immediately send the new packet (the last packet in the window)
+                ColorPrint.print_info(f"update: new_segment_send_index = {new_segment_send_index}, len_file - MSS = {len(file_content) - MSS}, send: SEQ = {SEQ_NUM}, data = {file_content[new_segment_send_index:new_segment_send_index+MSS]}")
+                # print(f"received: ack_received = {ack_received}, expected_ack_num = {expected_ack_num}\n")
+                # print(f"ack_received = {ack_received}, expected_ack_num = {expected_ack_num}, new_segment_send_index = {new_segment_send_index} SEQ_NUM = {SEQ_NUM}")
 
                 #here only send the last packet, so ignore all packets before the last packet
                 send_segment_PL(pdrop, seed_num, file_content, new_segment_send_index, MSS, MWS, SEQ_NUM, clientSocket,\
@@ -220,34 +273,31 @@ pdrop, seed_num):
                     expected_ack_num += segement_left_over_size_bytes
                 else: 
                     expected_ack_num += MSS
+                ColorPrint.print_info(f"expected_ack_num = {expected_ack_num}")         
 
-            #for fast retransmission
-            if ack_received < expected_ack_num:
-                if prev_ack == ack_received:
-                    duplicated_ack += 1
-
-                if duplicated_ack == 3:
-                    ColorPrint.print_pass(f"fast retransmit, seq_num = {ack_received}")
-                    tmp = SEQ_NUM
-                    SEQ_NUM = ack_received
-                    send_segment_PL(pdrop, seed_num, file_content, new_segment_send_index, MSS, MWS, SEQ_NUM, clientSocket,\
-                    receiver_host_ip, receiver_port, start_time, ACK, segment_leftover_beginning_index, segement_left_over_size_bytes) 
-                    SEQ_NUM = tmp
-                    duplicated_ack = 0
-            prev_ack = ack_received
-            
         #if timeout
         except:
+            # print(f"timeout, segment_send_index = {segment_send_index}beginning_window_index = {beginning_window_index}, segment_send_index = {segment_send_index}")
+            #resend the window
+            # send_window_of_packets(segment_send_index, beginning_window_index, file_content, MSS, MWS, SEQ_NUM,\
+            # clientSocket, receiver_host_ip, receiver_port, timeout, pdrop, seed_num, start_time, ACK)
+
             #reset SEQ_NUM
             SEQ_NUM = beginning_window_index + 1    #here plus 1 because in the handshake there's 1 sequence number
             ColorPrint.print_warn(f"SEQ_NUM = {SEQ_NUM}, beginning_window_index = {beginning_window_index}, MWS = {MWS}")
+            # send_segment_PL(pdrop, seed_num, file_content, beginning_window_index, MSS, MWS, SEQ_NUM, clientSocket,\
+            # receiver_host_ip, receiver_port, start_time, ACK, timeout) 
             send_window_of_packets(beginning_window_index, beginning_window_index, file_content, MSS, MWS, SEQ_NUM,\
             clientSocket, receiver_host_ip, receiver_port, timeout, pdrop, seed_num, start_time, ACK, segment_leftover_beginning_index, segement_left_over_size_bytes,\
             window_leftover_size_bytes)
 
             if beginning_window_index == 0:
                 SEQ_NUM = beginning_window_index + 1
+            # time.sleep(0.1)
             continue
+
+        #sleep for UPDATE_INTERVAL
+        # time.sleep(UPDATE_INTERVAL)
 
 
 def send_segment_PL(pdrop, seed_num, file_content, segment_index, MSS, MWS, seq_num, clientSocket,\
@@ -260,11 +310,13 @@ receiver_host_ip, receiver_port, start_time, ACK, segment_leftover_beginning_ind
     if not packet_lost(pdrop, seed_num):
         #if it's the last index, only send the size 
         if segement_left_over_size_bytes != 0 and segment_index == segment_leftover_beginning_index:
-            # ColorPrint.print_info(f"==> enter the condition for the last segment, segment_index = {segment_index}, data = {file_content[segment_index:segment_index+segement_left_over_size_bytes]}")
+            ColorPrint.print_info(f"==> enter the condition for the last segment, segment_index = {segment_index}, data = {file_content[segment_index:segment_index+segement_left_over_size_bytes]}")
             send_segment = file_content[segment_index:segment_index+segement_left_over_size_bytes]
             send_segment_format = send_segment_format_generator(segement_left_over_size_bytes)
+            #update SEQ_NUM and the temp_seq_num
+            # print(f"sent successful, data = {send_segment}, SEQ_NUM = {SEQ_NUM}")
             payload = struct.pack(send_segment_format, SEQ_NUM, send_segment.encode('utf-8'), 'DATA'.encode('utf-8'))
-            # ColorPrint.print_pass(f"*==>send the segment {send_segment}, SEQ_NUM = {SEQ_NUM}, payload = {payload}")
+            ColorPrint.print_pass(f"*==>send the segment {send_segment}, SEQ_NUM = {SEQ_NUM}, payload = {payload}")
             clientSocket.sendto(payload, (receiver_host_ip, receiver_port))
             clientSocket.sendto(payload, (receiver_host_ip, receiver_port)) #send it twice 
             
@@ -272,7 +324,8 @@ receiver_host_ip, receiver_port, start_time, ACK, segment_leftover_beginning_ind
             send_segment = file_content[segment_index:segment_index+MSS]  #here we are excluding the size of the header
             send_segment_format = send_segment_format_generator(MSS)
             #send data
-            # ColorPrint.print_info(f"==>send the segment {send_segment}, SEQ_NUM = {SEQ_NUM} ")
+            # print(f"sent successful, data = {send_segment}, SEQ_NUM = {SEQ_NUM}")
+            ColorPrint.print_info(f"==>send the segment {send_segment}, SEQ_NUM = {SEQ_NUM} ")
             payload = struct.pack(send_segment_format, SEQ_NUM, send_segment.encode('utf-8'), 'DATA'.encode('utf-8'))
             clientSocket.sendto(payload, (receiver_host_ip, receiver_port))
 
@@ -281,10 +334,26 @@ receiver_host_ip, receiver_port, start_time, ACK, segment_leftover_beginning_ind
 
     else:
         send_segment = file_content[segment_index:segment_index+MSS]
+        # print(f"dropped the segment {send_segment}, its SEQ_NUM = {SEQ_NUM}, segment_index = {segment_index}")
+        # print("\n\n")
         write_report('drop', start_time, 'D', SEQ_NUM, MSS, ACK)
 
     #update SEQ_NUM and the temp_seq_num
+    ColorPrint.print_pass(f"before update seq num = {SEQ_NUM}")
     update_SEQ_NUM(MSS, segment_index, segement_left_over_size_bytes, segment_leftover_beginning_index)
+    ColorPrint.print_pass(f"after update seq num = {SEQ_NUM}")
+
+# def send_segment(file_content, segment_index, MSS, MWS, seq_num, clientSocket, receiver_host_ip, receiver_port):
+#     '''
+#     This function sends each segment in the size of MSS, 
+#     '''
+#     send_segment = file_content[segment_index:segment_index+MSS]  #here we are excluding the size of the header
+#     # print(f"sending segment = {send_segment}, len_segment = {len(send_segment)}")
+
+#     #send data
+#     send_segment_format = send_segment_format_generator(MSS)
+#     payload = struct.pack(send_segment_format, seq_num, send_segment.encode('utf-8'))
+#     clientSocket.sendto(payload, (receiver_host_ip, receiver_port))
 
 
 def send_window_of_packets(segment_index, beginning_window_index, file_content, MSS, MWS, next_seq_num, \
@@ -306,15 +375,16 @@ segement_left_over_size_bytes, window_leftover_size_bytes):
             segment_index += MSS
         
         #here is when the segment_index reach to the last packet which might have a different sizes
-        # ColorPrint.print_info(f"=> check the following are equal:segment_index = {segment_index}, segment_leftover_beginning_index = {segment_leftover_beginning_index}")
+        ColorPrint.print_info(f"=> check the following are equal:segment_index = {segment_index}, segment_leftover_beginning_index = {segment_leftover_beginning_index}")
         send_segment_PL(pdrop, seed_num, file_content, segment_index, MSS, MWS, next_seq_num, clientSocket,\
         receiver_host_ip, receiver_port, start_time, ACK, segment_leftover_beginning_index, segement_left_over_size_bytes)
+
         segment_index += segement_left_over_size_bytes        #Here for the last segment that has a different size, increment segment index by the size of the last segment
 
 
     else:
         while segment_index < beginning_window_index + MWS:
-            # ColorPrint.print_fail(f"segment_index = {segment_index}, beginning_window_index + MWS = {beginning_window_index + MWS}")
+            ColorPrint.print_fail(f"segment_index = {segment_index}, beginning_window_index + MWS = {beginning_window_index + MWS}")
             # print(f"segment_index = {segment_index}, beginning_window_index + MWS = {beginning_window_index + MWS}")
             #for the first segment of each window, set the timer, other segments do not require timer
             send_segment_PL(pdrop, seed_num, file_content, segment_index, MSS, MWS, next_seq_num, clientSocket,\
@@ -324,6 +394,8 @@ segement_left_over_size_bytes, window_leftover_size_bytes):
             segment_index += MSS
     
     segment_index = beginning_window_index          #reset segment index to the start of the window
+
+
 
 
 def receive_acknowledgement(clientSocket, start_time, next_seq_num, MSS):
@@ -417,6 +489,9 @@ window_leftover_beginning_index, segement_left_over_size_bytes, segment_leftover
     int(window_leftover_beginning_index), int(segement_left_over_size_bytes), int(segment_leftover_beginning_index), file_size)
     print("sendingding")
     clientSocket.sendto(payload, (receiver_host_ip, receiver_port))
+
+
+# def send_disconnect(clientSocket, receiver_host_ip, receiver_port):
 
 def close_connection(recesiver_host_ip, receiver_port, clientSocket, start_time, MSS):
     global SEQ_NUM
