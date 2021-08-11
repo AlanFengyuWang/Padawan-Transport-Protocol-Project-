@@ -1,0 +1,24 @@
+python3 sender.py 127.0.0.1 13000 FileToSend.txt  64 64 0.01 0.2 10
+python3 sender.py 127.0.0.1 13000 FileToSendTest.txt  6 6 0.01 0.1 10
+python3 sender.py 127.0.0.1 13000 FileToSendTest.txt  64 64 0.01 0.6 10
+python3 sender.py 127.0.0.1 13000 FileToSendTest.txt  64 8 0.01 0.6 10
+
+
+#the one with issue:
+python3 sender.py 127.0.0.1 13000 FileToSendTest.txt  64 8 0.01 0.8 10 
+
+
+
+AACDEFGH IJKLMNOP QRSTUVWX YZabcdef ghijklmn opqrstuv wxyz0123 456789!
+
+
+AACDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!
+ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!
+ACCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!
+ADCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!
+AECDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!
+AFCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!
+AGCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!
+AHCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!
+AICDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!
+AJCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklonetwothreefoufinalworld!

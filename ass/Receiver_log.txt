@@ -1,0 +1,3 @@
+Amount of data received in bytes: 32800
+Amount of segments received: 656
+num_duplicate_segment_received: 2624
