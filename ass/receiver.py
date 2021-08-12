@@ -2,6 +2,9 @@
 Author: Fengyu Wang
 Zid: z5187561
 Python Version: 3.9.1
+
+Note: I have applied the special consideration, so this assignment is due to today 12:00pm, further
+detail please refer to professor Salil.
 '''
 from socket import *
 import sys
