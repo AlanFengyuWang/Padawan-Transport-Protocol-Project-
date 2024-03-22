@@ -1,27 +1,41 @@
 # Padawan Transport Protocol (PTP)
 
-## Introduction
-PTP is a custom transport layer protocol built atop UDP to offer reliable data transmission. It is designed to simulate the operational procedures of TCP, including connection management and reliable packet delivery, while operating within the constraints and simplicity of the UDP protocol.
+## Project Overview
+The Padawan Transport Protocol (PTP) is an advanced transport layer protocol designed to ensure reliable data transmission over unreliable networks. It leverages the lightweight nature of UDP while incorporating the reliable delivery features akin to TCP, specifically crafted for unidirectional data transfer.
 
-## Features
-- **Reliable Transport**: Implements mechanisms for assured packet delivery despite the underlying unreliability of UDP.
-- **Connection Establishment and Termination**: Adopts a three-way handshake for initiating communication sessions and a systematic closure procedure at the end of data transmission.
-- **Packet Loss Simulation**: Features a built-in packet loss module, enabling the simulation of adverse network conditions to test the resilience and reliability of the protocol.
-- **Unidirectional Data Flow**: Facilitates a one-way transfer of data from a sender to a receiver component, ensuring data integrity and order.
+## Key Features
+- **Reliable Delivery**: Implements a custom reliable delivery mechanism over UDP, including sequence numbering and acknowledgments.
+- **Connection Management**: Establishes and terminates connections using a SYN/SYN-ACK/ACK pattern and a FIN/ACK sequence.
+- **Packet Loss Handling**: Simulates packet loss scenarios to validate the protocol's reliability and robustness.
+- **Data Segmentation**: Adheres to predefined maximum segment size constraints for efficient data handling and transfer.
 
-## Protocol Specifications
-- **Handshake Protocol**: Utilizes SYN, SYN+ACK, and ACK signals for establishing a connection, akin to the initial handshake in TCP.
-- **Transmission Mechanics**: Employs a simplified version of TCP's data transmission mechanics, including sequence numbers and cumulative acknowledgments.
-- **Acknowledgment Strategy**: Incorporates immediate acknowledgment of received segments, streamlining the flow of communication.
-- **Data Segmentation**: Adheres to a maximum segment size (MSS) to segment data into manageable units for transmission.
+## Technical Specifications
+- **Unidirectional Data Flow**: Ensures data is sent from a sender to a receiver without the capability for reverse data transmission within the same session.
+- **Acknowledgment Processing**: Instantly processes acknowledgments for each data segment received without implementing delayed ACKs.
+- **Command Line Configuration**: Facilitates setup through command-line arguments including host IP, port numbers, file paths, window size, and packet loss probability.
 
-## Configuration Parameters
-- **Maximum Segment Size (MSS)**: Specifies the largest payload size for PTP data segments.
-- **Maximum Window Size (MWS)**: Defines the volume of data that can be sent unacknowledged, controlling the data flow.
-- **Timeout**: Establishes a fixed timeout interval for the retransmission of packets, enhancing the protocol's reliability.
-- **Packet Loss Probability (pdrop)**: Determines the likelihood of simulated packet loss to evaluate the protocol's performance under stress.
+## Protocol Architecture
+PTP operates in two main components:
+- **Sender**: Handles the sending of data segments and processing of acknowledgments.
+- **Receiver**: Manages the reception of data segments and the sending of acknowledgments.
 
-## Deployment Instructions
-To run the PTP system, execute the sender and receiver programs with appropriate command-line arguments that configure the network settings, file paths, and operational parameters.
+Both components maintain detailed logs for diagnostic purposes and performance analysis.
 
+## Usage Instructions
+PTP is initiated via command-line interfaces for both sender and receiver components. For detailed usage, refer to the instructions provided within the project repository.
 
+## Logging and Monitoring
+- **Sender Log**: Records all sent and received segments, including packet type, sequence number, and acknowledgments.
+- **Receiver Log**: Logs data reception and acknowledgment issuance, along with statistics on data received and segments handled.
+
+## Development and Deployment
+This project is developed in Python and is intended for deployment on systems that support Python 3.x. The protocol is designed with a focus on modularity and ease of integration into existing systems.
+
+## Packet Loss Module
+The Sender component includes a Packet Loss (PL) module to mimic network inconsistencies, thereby testing the protocol's capabilities in varying conditions.
+
+## Contributing
+Contributions to PTP are welcome. Developers interested in contributing to the project can follow the guidelines detailed in the contributing document.
+
+## Contact
+For queries or further information about the Padawan Transport Protocol project, please reach out to the project maintainers.
