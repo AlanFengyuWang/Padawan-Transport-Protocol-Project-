@@ -24,7 +24,4 @@ PTP is a custom transport layer protocol built atop UDP to offer reliable data t
 ## Deployment Instructions
 To run the PTP system, execute the sender and receiver programs with appropriate command-line arguments that configure the network settings, file paths, and operational parameters.
 
-## Logging
-The protocol includes comprehensive logging for both the sender and receiver, detailing every transmitted and received segment, with timestamps and sequence numbers for monitoring and debugging.
 
-For more in-depth understanding of the protocol's functionality and to contribute to its development, please refer to the included documentation.
